@@ -1,0 +1,50 @@
+name: Autograding
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: practical-5-router-props
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    
+    - name: Install dependencies
+      run: npm install
+
+    - name: React Tests (Environment, Props, Routing, Params)
+      run: npm test -- --watchAll=false --passWithNoTests
+      env:
+        CI: true
+
+    - name: Check for node_modules in git
+      run: |
+        if git ls-files --error-unmatch node_modules/ > /dev/null 2>&1; then
+          echo "❌ Hard Fail: node_modules detected in git repository"
+          exit 1
+        else
+          echo "✅ node_modules not present in git"
+        fi
+
+    - name: Check for forbidden <a> tags
+      run: |
+        # Search for <a href= in src directory, excluding typical innocent comments if possible, but keeping it strict
+        if grep -r "<a.*href=" src/ --include=*.js; then
+           echo "❌ Hard Fail: Standard <a> tag detected. Use <Link> from react-router-dom instead."
+           exit 1
+        else
+           echo "✅ No standard <a> tags found"
+        fi
